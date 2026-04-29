@@ -46,6 +46,8 @@ jobs:
             echo "RAZORPAY_KEY_SECRET=${{ secrets.RAZORPAY_KEY_SECRET }}" >> .env
             echo "REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}" >> .env
             echo "REACT_APP_RAZORPAY_KEY_ID=${{ secrets.REACT_APP_RAZORPAY_KEY_ID }}" >> .env
+            echo "key_id=${{ secrets.KEY_ID }}" >> .env
+            echo "key_secret=${{ secrets.KEY_SECRET }}" >> .env
 
             echo ".env created successfully"
 
