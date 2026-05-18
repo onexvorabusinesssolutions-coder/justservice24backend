@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const User = require('../models/User');
+const Business = require('../models/Business');
 const Referral = require('../models/Referral');
 const Settings = require('../models/Settings');
 const generateReferralCode = require('../utils/generateReferralCode');
@@ -54,6 +55,9 @@ exports.signup = async (req, res) => {
 
     await user.save();
     await Referral.create({ userId: user._id, referralCode: userReferralCode });
+
+    // Link any admin-added businesses with this phone number
+    await Business.updateMany({ phone, userId: null }, { userId: user._id });
 
     await notify({ userId: user._id, type: 'new_user', title: 'Welcome to JustService24! 🎉', message: `Hi ${name}, your account has been created successfully.`, icon: '🎉', isPublic: false });
     await notify({ userId: null, type: 'new_user', title: 'New User Joined! 🚀', message: `${name} just joined JustService24.`, icon: '👤', isPublic: true });

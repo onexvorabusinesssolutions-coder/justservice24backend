@@ -28,6 +28,7 @@ router.post('/:id/enquiry', ctrl.trackEnquiry);
 router.get('/admin/all', adminAuth, ctrl.getAllAdmin);
 router.get('/admin/stats', adminAuth, ctrl.getAdminStats);
 router.get('/admin/enquiries', adminAuth, ctrl.getEnquiriesAdmin);
+router.post('/admin/create', adminAuth, multiUpload, ctrl.adminCreate);
 router.patch('/admin/:id/status', adminAuth, ctrl.updateStatus);
 router.delete('/admin/:id', adminAuth, ctrl.delete);
 

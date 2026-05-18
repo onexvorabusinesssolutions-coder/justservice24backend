@@ -169,6 +169,15 @@ exports.getById = async (req, res) => {
     );
     if (!b) return error(res, 'Business not found', 404);
     success(res, b);
+    // Notify business owner jab koi uska business dekhe
+    await notify({
+      userId: b.userId,
+      type: 'business_viewed',
+      title: 'Someone viewed your business! 👀',
+      message: `Your business "${b.businessName}" was just viewed. Total views: ${b.totalClicks}`,
+      icon: '👀',
+      link: `/business/${b._id}`,
+    });
     // Growth milestone check for clicks
     if (MILESTONES.clicks.includes(b.totalClicks)) {
       const owner = await User.findById(b.userId).select('email name');
@@ -230,6 +239,15 @@ exports.trackEnquiry = async (req, res) => {
   try {
     const b = await Business.findByIdAndUpdate(req.params.id, { $inc: { totalEnquiries: 1 } }, { new: true });
     success(res, null, 'Enquiry tracked');
+    // Notify business owner
+    await notify({
+      userId: b.userId,
+      type: 'new_enquiry',
+      title: 'New Enquiry Received! 📞',
+      message: `Someone made an enquiry on your business "${b.businessName}". Total enquiries: ${b.totalEnquiries}`,
+      icon: '📞',
+      link: `/business/${b._id}`,
+    });
     // Growth milestone check
     if (MILESTONES.enquiries.includes(b.totalEnquiries)) {
       const owner = await User.findById(b.userId).select('email name');
@@ -365,6 +383,50 @@ exports.delete = async (req, res) => {
   try {
     await Business.findByIdAndDelete(req.params.id);
     success(res, null, 'Business deleted successfully');
+  } catch (e) {
+    error(res, e.message);
+  }
+};
+
+// POST /api/businesses/admin/create — admin directly business add kare
+exports.adminCreate = async (req, res) => {
+  try {
+    const body = typeof req.body.data === 'string' ? JSON.parse(req.body.data) : req.body;
+    const { businessName, personName, phone, whatsapp, email, category, subCategory, businessType,
+      city, state, address, pincode, district, landmark, description, website, tagline, established,
+      facebook, instagram, twitter, linkedin, paymentModes, logistryEnabled, deliveryRange,
+      services, products, hours, status = 'approved' } = body;
+
+    if (!businessName || !phone) return error(res, 'Business name and phone are required', 400);
+
+    const logo = req.files?.logo?.[0]?.path || null;
+    const images = req.files?.images?.map(f => f.path) || [];
+    const brochure = req.files?.brochure?.[0]?.path || null;
+
+    const parse = (val, fallback = []) => {
+      if (!val) return fallback;
+      return typeof val === 'string' ? JSON.parse(val) : val;
+    };
+
+    const existingUser = await User.findOne({ phone });
+
+    const b = await Business.create({
+      businessName, personName, phone, whatsapp, email, category, subCategory, businessType,
+      city, state, address, pincode, district, landmark, description, website, tagline, established,
+      facebook, instagram, twitter, linkedin, deliveryRange,
+      logistryEnabled: logistryEnabled === true || logistryEnabled === 'true',
+      paymentModes: parse(paymentModes),
+      services: parse(services),
+      products: parse(products),
+      hours: parse(hours, {}),
+      logo, images, brochure,
+      userId: existingUser?._id || null,
+      status,
+      isActive: status === 'approved',
+      profilePct: 60,
+    });
+
+    success(res, b, 'Business created successfully', 201);
   } catch (e) {
     error(res, e.message);
   }
